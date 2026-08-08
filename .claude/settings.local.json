@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(STASHUP_TEST_DB_URL=jdbc:mysql://127.0.0.1:3306/stashup_test STASHUP_TEST_DB_USERNAME=root STASHUP_TEST_DB_PASSWORD='' ./mvnw -B verify -Dsurefire.failIfNoSpecifiedTests=false -Dtest=ScoreProportionTest -Dit.test=EntryLifecycleIT -Djacoco.skip=true)"
+    ]
+  }
+}

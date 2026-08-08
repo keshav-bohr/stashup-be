@@ -1,0 +1,900 @@
+openapi: 3.1.0
+info:
+  title: StashUp Backend API
+  version: 1.0.0
+  description: |
+    Personal finance tracking with a proportion-based stash score and friends-only comparison.
+
+    Conventions that hold across every endpoint:
+      * All money is `{ amountMinor, currency }` — integer minor units, explicit ISO 4217 currency.
+      * All identifiers are opaque strings (UUIDv7). Clients must not parse them.
+      * `entryDate` and `period` are calendar values with no time component and no timezone.
+      * All instants are ISO 8601 UTC.
+      * Every error is an RFC 9457 ProblemDetail extended with `code` and `correlationId`.
+      * Every list is keyset-paginated with a maximum page size of 100.
+      * Every endpoint requires authentication unless explicitly marked `security: []`.
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Users
+  - name: Categories
+  - name: Entries
+  - name: Summaries
+  - name: Scores
+  - name: Reconciliation
+  - name: Friends
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Exchange credentials for tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401':
+          description: |
+            Invalid credentials. Returned identically for an unknown email and a wrong password,
+            so the endpoint cannot be used to enumerate registered accounts.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '423':
+          description: Account temporarily locked after repeated failures
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Exchange a refresh token for a new token pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: Rotated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke the current refresh token
+      responses:
+        '204': { description: Logged out }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /me:
+    get:
+      tags: [Users]
+      summary: Get the authenticated user's profile
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [Users]
+      summary: Update display name or timezone
+      description: Base currency is immutable after registration and is not accepted here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { type: string, minLength: 1, maxLength: 50 }
+                timezone: { type: string, example: Asia/Kolkata }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [Users]
+      summary: Permanently delete the account and all its data
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Search for users by display name
+      description: |
+        Returns identity only. A user's score and band are never included here, regardless of
+        friendship status.
+      parameters:
+        - { name: query, in: query, required: true, schema: { type: string, minLength: 2, maxLength: 50 } }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Matching users, excluding those who have blocked the caller
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/UserSummary' }
+                  nextCursor: { type: [string, 'null'] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /categories:
+    get:
+      tags: [Categories]
+      summary: List system and user-defined categories
+      parameters:
+        - { name: entryType, in: query, schema: { $ref: '#/components/schemas/EntryType' } }
+      responses:
+        '200':
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Categories]
+      summary: Create a user-defined category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entryType, name]
+              properties:
+                entryType: { $ref: '#/components/schemas/EntryType' }
+                name: { type: string, minLength: 1, maxLength: 50 }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /categories/{categoryId}:
+    delete:
+      tags: [Categories]
+      summary: Delete a user-defined category
+      parameters:
+        - { name: categoryId, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Category still referenced by entries; the problem body names the count
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /entries:
+    post:
+      tags: [Entries]
+      summary: Record a financial entry
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EntryRequest' }
+      responses:
+        '201':
+          description: Recorded. The affected period summary is already recalculated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Entry' }
+        '400':
+          description: |
+            Validation failed. `code` distinguishes the cases the spec calls out:
+            `AMOUNT_NOT_POSITIVE`, `DATE_IN_FUTURE`, `UNKNOWN_CATEGORY`,
+            `CATEGORY_TYPE_MISMATCH`, `WITHDRAWAL_NOT_ALLOWED_FOR_TYPE`, `CURRENCY_MISMATCH`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '409':
+          description: Idempotency key reused with a different request body
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+    get:
+      tags: [Entries]
+      summary: List the caller's entries
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: entryType, in: query, schema: { $ref: '#/components/schemas/EntryType' } }
+        - { name: categoryId, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Entries, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Entry' }
+                  nextCursor: { type: [string, 'null'] }
+
+  /entries/{entryId}:
+    get:
+      tags: [Entries]
+      summary: Get one entry
+      parameters: [{ name: entryId, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: Entry
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Entry' }
+        '404':
+          description: |
+            Not found. Returned identically whether the entry does not exist or belongs to another
+            user — a distinct 403 would confirm the existence of another user's record.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+    patch:
+      tags: [Entries]
+      summary: Edit an entry
+      description: |
+        If the edit moves `entryDate` across a month boundary, both the old and the new month are
+        recalculated before the response returns.
+      parameters: [{ name: entryId, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EntryPatch' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Entry' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Entries]
+      summary: Delete an entry
+      parameters: [{ name: entryId, in: path, required: true, schema: { type: string } }]
+      responses:
+        '204': { description: Deleted; affected period recalculated }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /summaries/{period}:
+    get:
+      tags: [Summaries]
+      summary: Totals by type and by category for a month or a year
+      parameters: [{ $ref: '#/components/parameters/Period' }]
+      responses:
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PeriodSummary' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '404':
+          description: No entries recorded in this period
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /scores/{period}:
+    get:
+      tags: [Scores]
+      summary: The caller's stash score for a month or a year
+      parameters: [{ $ref: '#/components/parameters/Period' }]
+      responses:
+        '200':
+          description: |
+            Score. Always returned to the owner regardless of completeness — an unreconciled period
+            still shows its number, it is only excluded from friend rankings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Score' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '404':
+          description: No entries recorded in this period
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+  /scores:
+    get:
+      tags: [Scores]
+      summary: Score history across months
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}$' } }
+        - { name: to, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}$' } }
+      responses:
+        '200':
+          description: Scores for months that have data, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Score' }
+
+  /periods/{period}/reconciliation:
+    get:
+      tags: [Reconciliation]
+      summary: Reconciliation state for a month
+      parameters: [{ $ref: '#/components/parameters/Period' }]
+      responses:
+        '200':
+          description: |
+            Reconciliation detail. When `state` is `UNRECONCILED`, `prompt` carries the two
+            resolutions the spec requires and no others.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reconciliation' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /periods/{period}/drawdown-acknowledgment:
+    put:
+      tags: [Reconciliation]
+      summary: Confirm the gap is explained by money held before this period
+      description: |
+        Idempotent. Changes no recorded amount and no score — it moves the period to `COMPLETE`
+        so it becomes eligible for friend comparison.
+      parameters: [{ $ref: '#/components/parameters/Period' }]
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reconciliation' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Period has no gap to acknowledge
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+    delete:
+      tags: [Reconciliation]
+      summary: Withdraw a previous acknowledgment
+      parameters: [{ $ref: '#/components/parameters/Period' }]
+      responses:
+        '204': { description: Withdrawn; period re-evaluated }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /friend-requests:
+    post:
+      tags: [Friends]
+      summary: Send a friend request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string }
+      responses:
+        '201':
+          description: |
+            Request sent. Also returned when the target has blocked the caller, so a block is not
+            detectable by probing.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FriendRequest' }
+        '400':
+          description: '`SELF_REQUEST` or `ALREADY_FRIENDS`'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    get:
+      tags: [Friends]
+      summary: List pending friend requests
+      parameters:
+        - { name: direction, in: query, required: true, schema: { type: string, enum: [INCOMING, OUTGOING] } }
+      responses:
+        '200':
+          description: Pending requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FriendRequest' }
+
+  /friend-requests/{requestId}/accept:
+    post:
+      tags: [Friends]
+      summary: Accept an incoming request
+      parameters: [{ name: requestId, in: path, required: true, schema: { type: string } }]
+      responses:
+        '204': { description: Accepted; both users now see each other's scores }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /friend-requests/{requestId}/decline:
+    post:
+      tags: [Friends]
+      summary: Decline an incoming request
+      description: The requester is never informed that a decline occurred.
+      parameters: [{ name: requestId, in: path, required: true, schema: { type: string } }]
+      responses:
+        '204': { description: Declined }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /friends:
+    get:
+      tags: [Friends]
+      summary: List accepted friends
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Friends
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/UserSummary' }
+                  nextCursor: { type: [string, 'null'] }
+
+  /friends/{userId}:
+    delete:
+      tags: [Friends]
+      summary: Remove a friend
+      parameters: [{ name: userId, in: path, required: true, schema: { type: string } }]
+      responses:
+        '204': { description: Removed; neither user can see the other's score }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /blocks:
+    post:
+      tags: [Friends]
+      summary: Block a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string }
+      responses:
+        '204': { description: Blocked; mutual invisibility takes effect immediately }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /blocks/{userId}:
+    delete:
+      tags: [Friends]
+      summary: Unblock a user
+      parameters: [{ name: userId, in: path, required: true, schema: { type: string } }]
+      responses:
+        '204': { description: Unblocked; no friendship is restored }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /comparison/{period}:
+    get:
+      tags: [Friends]
+      summary: Rank the caller and their friends by stash score
+      description: |
+        Returns score, band, change since the preceding period, and streak of consecutive complete
+        months. It returns no amounts, no categories, no income, and no reconciliation gap for
+        anyone — including the caller's own friends.
+
+        Only `COMPLETE` periods are ranked. A person whose period is `UNRECONCILED`,
+        `INSUFFICIENT_DATA`, or absent appears in `unranked` with a reason and no score.
+      parameters: [{ $ref: '#/components/parameters/Period' }]
+      responses:
+        '200':
+          description: Comparison
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Comparison' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Period:
+      name: period
+      in: path
+      required: true
+      description: A month as `YYYY-MM` or a year as `YYYY`.
+      schema:
+        type: string
+        pattern: '^\d{4}(-\d{2})?$'
+      examples:
+        month: { value: '2026-08' }
+        year: { value: '2026' }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+      description: Opaque keyset cursor from the previous page's `nextCursor`.
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      description: Values above 100 are rejected rather than silently clamped.
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, maxLength: 64 }
+      description: |
+        Replaying the same key with the same body replays the original response. Reusing it with a
+        different body is a 409, not a silent replay.
+
+  responses:
+    ValidationFailed:
+      description: Request failed validation; `errors` names each offending field
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Unauthorized:
+      description: Missing, expired, or invalid credentials
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Resource does not exist, or is not visible to the caller
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Conflicts with existing state
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    RateLimited:
+      description: Too many requests
+      headers:
+        Retry-After: { schema: { type: integer }, description: Seconds }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+    Problem:
+      type: object
+      description: RFC 9457 problem detail, extended with a stable code and the correlation ID.
+      required: [type, title, status, code, correlationId]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code:
+          type: string
+          description: |
+            Stable machine-readable code. Never reworded once published — clients match on it.
+          example: AMOUNT_NOT_POSITIVE
+        correlationId: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+
+    Money:
+      type: object
+      required: [amountMinor, currency]
+      properties:
+        amountMinor:
+          type: integer
+          format: int64
+          description: Minor units (e.g. paise, cents). Always an integer; never a decimal.
+        currency: { type: string, minLength: 3, maxLength: 3, example: INR }
+
+    EntryType:
+      type: string
+      enum: [INCOME, EXPENSE, SAVING, INVESTMENT, DEDUCTION]
+
+    Direction:
+      type: string
+      enum: [CONTRIBUTION, WITHDRAWAL]
+      description: |
+        `WITHDRAWAL` is only valid for `SAVING` and `INVESTMENT`. Amounts are always positive;
+        direction carries the sign.
+
+    Completeness:
+      type: string
+      enum: [COMPLETE, UNRECONCILED, INSUFFICIENT_DATA]
+
+    Band:
+      type: string
+      enum: [BAND_0_19, BAND_20_39, BAND_40_59, BAND_60_79, BAND_80_100]
+
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName, baseCurrency, timezone]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 12, maxLength: 128 }
+        displayName: { type: string, minLength: 1, maxLength: 50 }
+        baseCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: Immutable after registration.
+        timezone: { type: string, example: Asia/Kolkata }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    TokenPair:
+      type: object
+      required: [accessToken, refreshToken, expiresIn]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer, description: Access token lifetime in seconds }
+
+    Profile:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        displayName: { type: string }
+        baseCurrency: { type: string }
+        timezone: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    UserSummary:
+      type: object
+      description: Identity only. Never carries a score or band.
+      properties:
+        id: { type: string }
+        displayName: { type: string }
+        friendshipStatus:
+          type: string
+          enum: [NONE, PENDING_OUTGOING, PENDING_INCOMING, ACCEPTED]
+
+    Category:
+      type: object
+      properties:
+        id: { type: string }
+        entryType: { $ref: '#/components/schemas/EntryType' }
+        name: { type: string }
+        system: { type: boolean, description: True for built-in categories, which cannot be deleted }
+
+    EntryRequest:
+      type: object
+      required: [entryType, amount, entryDate, categoryId]
+      properties:
+        entryType: { $ref: '#/components/schemas/EntryType' }
+        direction:
+          allOf: [{ $ref: '#/components/schemas/Direction' }]
+          default: CONTRIBUTION
+        amount: { $ref: '#/components/schemas/Money' }
+        entryDate: { type: string, format: date, description: Not in the future }
+        categoryId: { type: string }
+        note: { type: string, maxLength: 500 }
+
+    EntryPatch:
+      type: object
+      minProperties: 1
+      properties:
+        amount: { $ref: '#/components/schemas/Money' }
+        entryDate: { type: string, format: date }
+        categoryId: { type: string }
+        direction: { $ref: '#/components/schemas/Direction' }
+        note: { type: [string, 'null'], maxLength: 500 }
+
+    Entry:
+      type: object
+      properties:
+        id: { type: string }
+        entryType: { $ref: '#/components/schemas/EntryType' }
+        direction: { $ref: '#/components/schemas/Direction' }
+        amount: { $ref: '#/components/schemas/Money' }
+        entryDate: { type: string, format: date }
+        category: { $ref: '#/components/schemas/Category' }
+        note: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    PeriodSummary:
+      type: object
+      properties:
+        period: { type: string, example: '2026-08' }
+        granularity: { type: string, enum: [MONTH, YEAR] }
+        currency: { type: string }
+        totalsByType:
+          type: object
+          additionalProperties: { $ref: '#/components/schemas/TypeTotal' }
+        totalsByCategory:
+          type: array
+          items:
+            type: object
+            properties:
+              category: { $ref: '#/components/schemas/Category' }
+              total: { $ref: '#/components/schemas/Money' }
+              entryCount: { type: integer }
+        entryCount: { type: integer }
+        contributingMonths:
+          type: [integer, 'null']
+          description: Present for yearly summaries; how many months held data.
+
+    TypeTotal:
+      type: object
+      properties:
+        total: { $ref: '#/components/schemas/Money' }
+        entryCount: { type: integer }
+
+    Score:
+      type: object
+      description: |
+        `score` and `band` are null when `completeness` is `INSUFFICIENT_DATA`. A score of 0 with
+        `COMPLETE` means income was recorded and nothing was stashed — a different fact.
+      properties:
+        period: { type: string, example: '2026-08' }
+        granularity: { type: string, enum: [MONTH, YEAR] }
+        score: { type: [integer, 'null'], minimum: 0, maximum: 100 }
+        band: { oneOf: [{ $ref: '#/components/schemas/Band' }, { type: 'null' }] }
+        completeness: { $ref: '#/components/schemas/Completeness' }
+        capped:
+          type: boolean
+          description: True when stashed met or exceeded money in and the score was capped at 100.
+        inputs:
+          type: object
+          description: The figures that produced the score, so the user can see why (FR-016).
+          properties:
+            moneyIn: { $ref: '#/components/schemas/Money' }
+            stashed: { $ref: '#/components/schemas/Money' }
+            proportionBasisPoints: { type: [integer, 'null'], minimum: 0, maximum: 10000 }
+        changeFromPreviousPeriod:
+          type: [integer, 'null']
+          description: Points versus the immediately preceding period; null if it had no score.
+        contributingMonths:
+          type: [integer, 'null']
+          description: Present for yearly scores.
+        computedAt: { type: string, format: date-time }
+
+    Reconciliation:
+      type: object
+      properties:
+        period: { type: string, example: '2026-08' }
+        state: { $ref: '#/components/schemas/Completeness' }
+        moneyIn: { $ref: '#/components/schemas/Money' }
+        outflow: { $ref: '#/components/schemas/Money' }
+        gap: { $ref: '#/components/schemas/Money' }
+        tolerance: { $ref: '#/components/schemas/Money' }
+        acknowledgment:
+          type: [object, 'null']
+          properties:
+            acknowledgedGap: { $ref: '#/components/schemas/Money' }
+            acknowledgedAt: { type: string, format: date-time }
+        prompt:
+          type: [object, 'null']
+          description: |
+            Present only when `state` is `UNRECONCILED`. Exactly two resolutions, never more.
+            Copy must not assert or imply dishonesty (FR-025).
+          properties:
+            message: { type: string }
+            resolutions:
+              type: array
+              minItems: 2
+              maxItems: 2
+              items:
+                type: string
+                enum: [RECORD_MISSING_INCOME, ACKNOWLEDGE_DRAWDOWN]
+
+    Comparison:
+      type: object
+      properties:
+        period: { type: string, example: '2026-08' }
+        streakLookbackMonths:
+          type: integer
+          const: 24
+          description: |
+            Streaks are computed over a bounded 24-month window. A streak reported as 24 may extend
+            further back; the cap is declared rather than silently truncating.
+        ranked:
+          type: array
+          description: Ordered by score, highest first. Ties broken by underlying basis points.
+          items: { $ref: '#/components/schemas/ComparisonEntry' }
+        unranked:
+          type: array
+          description: |
+            People with no rankable score for this period. Shown as such rather than as zero or
+            last place (FR-038).
+          items:
+            type: object
+            properties:
+              user: { $ref: '#/components/schemas/UserSummary' }
+              reason:
+                type: string
+                enum: [NO_DATA, UNRECONCILED, INSUFFICIENT_DATA]
+
+    ComparisonEntry:
+      type: object
+      description: |
+        The complete set of fields one user may see about another. No amounts, no categories, no
+        income, no reconciliation gap.
+      properties:
+        user: { $ref: '#/components/schemas/UserSummary' }
+        isSelf: { type: boolean }
+        rank: { type: integer, minimum: 1 }
+        score: { type: integer, minimum: 0, maximum: 100 }
+        band: { $ref: '#/components/schemas/Band' }
+        changeFromPreviousPeriod: { type: [integer, 'null'] }
+        completeMonthStreak: { type: integer, minimum: 0, maximum: 24 }

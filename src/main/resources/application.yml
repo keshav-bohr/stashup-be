@@ -1,0 +1,98 @@
+spring:
+  application:
+    name: stashup-be
+
+  # Java 25 virtual threads: a blocking JDBC workload is close to the ideal case for them.
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    # Environment only. The application fails fast at startup if these are absent.
+    url: ${STASHUP_DB_URL}
+    username: ${STASHUP_DB_USERNAME}
+    password: ${STASHUP_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${STASHUP_DB_POOL_MAX:20}
+      minimum-idle: ${STASHUP_DB_POOL_MIN:5}
+      connection-timeout: 3000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema. Hibernate must never alter it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    # Forward-only, per constitution.
+    clean-disabled: true
+
+  jackson:
+    default-property-inclusion: non_null
+    deserialization:
+      fail-on-unknown-properties: true
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  tracing:
+    sampling:
+      probability: ${STASHUP_TRACE_SAMPLE:0.1}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+stashup:
+  security:
+    jwt-secret: ${STASHUP_JWT_SECRET}
+    access-token-ttl: PT15M
+    refresh-token-ttl: P30D
+    max-failed-logins: 5
+    lockout-duration: PT15M
+  pagination:
+    max-page-size: 100
+  idempotency:
+    retention: PT24H
+  reconciliation:
+    # Both tunable without a code change; see research.md.
+    tolerance-percent: 10
+    absolute-floor-minor: 10000
+  comparison:
+    streak-lookback-months: 24
+  rate-limit:
+    write-capacity: 60
+    write-refill-per-minute: 60
+    auth-capacity: 10
+    auth-refill-per-minute: 10
+
+logging:
+  # Native structured logging (Boot 3.4+). The `local` profile overrides this with a readable
+  # pattern in logback-spring.xml.
+  structured:
+    format:
+      console: ecs
+  level:
+    root: INFO
+    com.stashup: INFO

@@ -1,0 +1,38 @@
+# Test profile. The datasource is supplied dynamically by MySqlTestBase from Testcontainers.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    clean-disabled: false
+
+stashup:
+  security:
+    # Test-only key. Real deployments take this from the environment.
+    jwt-secret: test-only-secret-key-not-used-anywhere-real-0123456789
+    access-token-ttl: PT15M
+    refresh-token-ttl: P30D
+    max-failed-logins: 5
+    lockout-duration: PT15M
+  pagination:
+    max-page-size: 100
+  idempotency:
+    retention: PT24H
+  reconciliation:
+    tolerance-percent: 10
+    absolute-floor-minor: 10000
+  comparison:
+    streak-lookback-months: 24
+  rate-limit:
+    # Effectively disabled so functional tests are not throttled; limits have their own test.
+    write-capacity: 100000
+    write-refill-per-minute: 100000
+    auth-capacity: 100000
+    auth-refill-per-minute: 100000
+
+logging:
+  level:
+    root: WARN
+    com.stashup: INFO
+    org.testcontainers: WARN

@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+  Enforces the mechanical parts of constitution Principle I. Every violation is a build failure,
+  not a warning: severity is `error` at the root.
+-->
+<module name="Checker">
+  <property name="severity" value="error"/>
+  <property name="fileExtensions" value="java"/>
+
+  <!-- Principle I: no file over 500 lines. -->
+  <module name="FileLength">
+    <property name="max" value="500"/>
+  </module>
+
+  <module name="FileTabCharacter"/>
+  <module name="RegexpSingleline">
+    <property name="format" value="\s+$"/>
+    <property name="message" value="Trailing whitespace"/>
+  </module>
+
+  <module name="TreeWalker">
+    <!-- Principle I: cyclomatic complexity of 10 or less. -->
+    <module name="CyclomaticComplexity">
+      <property name="max" value="10"/>
+    </module>
+
+    <module name="UnusedImports"/>
+    <module name="RedundantImport"/>
+    <module name="AvoidStarImport"/>
+
+    <module name="EqualsHashCode"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="StringLiteralEquality"/>
+    <module name="MissingSwitchDefault"/>
+    <module name="FallThrough"/>
+    <module name="DefaultComesLast"/>
+    <module name="OneStatementPerLine"/>
+    <module name="MultipleVariableDeclarations"/>
+    <module name="UpperEll"/>
+    <module name="ArrayTypeStyle"/>
+
+    <module name="NeedBraces"/>
+    <module name="LeftCurly"/>
+    <module name="RightCurly"/>
+
+    <module name="PackageName">
+      <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+    </module>
+    <module name="TypeName"/>
+    <module name="MethodName"/>
+    <module name="ConstantName"/>
+    <module name="LocalVariableName"/>
+    <module name="ParameterName"/>
+
+    <!--
+      Principle IV: credentials must never appear in source. This is a coarse net, not a
+      substitute for secret scanning, but it catches the obvious cases at review time.
+    -->
+    <module name="RegexpSinglelineJava">
+      <property name="format" value="(?i)(password|secret|apikey|api_key|token)\s*=\s*&quot;[^&quot;]{6,}&quot;"/>
+      <property name="message" value="Possible hardcoded credential; secrets must come from configuration"/>
+      <property name="ignoreComments" value="true"/>
+    </module>
+
+    <!-- Principle III: money is integer minor units; floating point must not touch amounts. -->
+    <module name="IllegalType">
+      <property name="illegalClassNames" value="java.lang.Float, java.lang.Double"/>
+      <property name="memberModifiers" value="LITERAL_PUBLIC, LITERAL_PROTECTED, LITERAL_PRIVATE"/>
+    </module>
+  </module>
+</module>
