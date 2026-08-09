@@ -23,4 +23,17 @@
       <appender-ref ref="CONSOLE"/>
     </root>
   </springProfile>
+
+  <!--
+    Every other profile: Boot's structured console appender, driven by
+    logging.structured.format.console. Without this branch the configuration has no appenders at
+    all outside `local`, which silently discards every log line - including the startup failure
+    report, leaving nothing but a bare non-zero exit.
+  -->
+  <springProfile name="!local">
+    <include resource="org/springframework/boot/logging/logback/structured-console-appender.xml"/>
+    <root level="INFO">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+  </springProfile>
 </configuration>
