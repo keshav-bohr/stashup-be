@@ -99,6 +99,27 @@ and will bite anyone following a pre-November-2025 tutorial:
 Also worth knowing: `spring-security-oauth2-jose` issues and verifies JWTs, but bearer-token
 authentication needs `spring-security-oauth2-resource-server` as well.
 
+## Layout
+
+Conventional Spring layered packages under `com.stashup`:
+
+| Package | Holds |
+|---|---|
+| `config` | `ApplicationProperties`, `TimeConfig`, `SecurityConfig` |
+| `controller` | 9 `@RestController`s |
+| `service` | Business logic, including the score/streak calculators and entry validator |
+| `repository` | Spring Data interfaces — every finder scoped by owning user |
+| `entity` | JPA entities |
+| `dto` | Request/response records |
+| `domain` | Framework-free value objects and enums (`Money`, `EntryType`, `PeriodRef`, …) |
+| `exception` | `ErrorCode`, `ApiException`, `GlobalExceptionHandler` |
+| `security` | `@CurrentUserId` and its argument resolver |
+| `web` | Correlation filter, rate limiting, keyset pagination |
+| `util` | `UuidV7` |
+
+`domain` deliberately has no Spring dependency, so the scoring and money rules are unit-testable
+without a container.
+
 ## Design notes
 
 - **Money** is integer minor units plus an explicit currency, everywhere. No floating point — and
@@ -119,6 +140,34 @@ authentication needs `spring-security-oauth2-resource-server` as well.
 
 ## Status
 
-User Story 1 (record and review) and User Story 2 (stash score) are implemented and tested.
-User Story 3 (reconciliation) and User Story 4 (friends and comparison) are specified and planned
-but not yet built. See [tasks.md](specs/001-stash-score-tracker/tasks.md) for the task-level state.
+All four user stories are implemented and tested, and `./mvnw verify` passes every gate
+including the coverage thresholds. **169 tests**: 80 unit, 89 integration and HTTP contract, all
+against real MySQL 8.4.
+
+| Story | State |
+|---|---|
+| US1 — record and review money movements | Done |
+| US2 — stash score | Done |
+| US3 — keep the score honest (reconciliation) | Done |
+| US4 — friends and comparison | Done |
+
+**102 of 112 tasks complete.** See [tasks.md](specs/001-stash-score-tracker/tasks.md) for the
+task-level state. Outstanding:
+
+- **T005** Error Prone + NullAway are not wired in. `-Xlint:all -Werror` and Checkstyle are, so
+  the build is warning-free, but strict nullness is not machine-enforced despite the JSpecify
+  annotations being present.
+- **T032** The generated OpenAPI document is not diffed against
+  [contracts/openapi.yaml](specs/001-stash-score-tracker/contracts/openapi.yaml) in CI, so the
+  two can drift.
+- **T103, T104** No latency regression suite and no query-count guard on the comparison view.
+  The single-query design is documented and deliberate but not currently enforced by a test.
+- **T107** No automated assertion that amounts and PII never reach log output.
+- **T108** No `Dockerfile` or `compose.yaml`.
+- **T110** The [quickstart](specs/001-stash-score-tracker/quickstart.md) scenarios have not been
+  run against a live instance; equivalent coverage exists in the automated suite.
+- **T012, T018, T073** Minor: no shared test data factory, no log-redaction helper, no dedicated
+  long-term-drawdown scenario.
+
+Testcontainers has not been exercised here because no Docker daemon was available — the suite ran
+against a local MySQL 8.4 through the documented fallback.

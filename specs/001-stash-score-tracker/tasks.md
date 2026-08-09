@@ -97,9 +97,9 @@ authenticated caller, so authentication lives here rather than in a story.
 
 ### Contract tests then implementation for auth
 
-- [ ] T028 [P] Write contract tests in `src/test/java/com/stashup/contract/AuthContractTest.java` for `POST /auth/register|login|refresh|logout`, asserting schemas, status codes, that unknown-email and wrong-password return an identical 401, and that a locked account returns 423 — **observe these failing before T029**
+- [X] T028 [P] Write contract tests in `src/test/java/com/stashup/contract/AuthContractTest.java` for `POST /auth/register|login|refresh|logout`, asserting schemas, status codes, that unknown-email and wrong-password return an identical 401, and that a locked account returns 423 — **observe these failing before T029**
 - [X] T029 Create `src/main/java/com/stashup/security/AuthController.java` and `AuthService.java` implementing registration, login, refresh rotation, and logout revocation to satisfy T028
-- [ ] T030 [P] Write contract tests in `src/test/java/com/stashup/contract/ProfileContractTest.java` for `GET|PATCH|DELETE /me`, asserting that `baseCurrency` is rejected on PATCH — then create `src/main/java/com/stashup/user/UserController.java` and `UserService.java` implementing them, with DELETE cascading per FR-003
+- [X] T030 [P] Write contract tests in `src/test/java/com/stashup/contract/ProfileContractTest.java` for `GET|PATCH|DELETE /me`, asserting that `baseCurrency` is rejected on PATCH — then create `src/main/java/com/stashup/user/UserController.java` and `UserService.java` implementing them, with DELETE cascading per FR-003
 
 ### Observability & schema verification
 
@@ -122,13 +122,13 @@ Delivers a working expense tracker even if nothing else ships.
 
 ### Tests for User Story 1 ⚠️ Write first, observe failing
 
-- [ ] T033 [P] [US1] Contract tests in `src/test/java/com/stashup/contract/CategoryContractTest.java` for `GET|POST /categories` and `DELETE /categories/{id}`, including 409 when a category is still referenced
-- [ ] T034 [P] [US1] Contract tests in `src/test/java/com/stashup/contract/EntryContractTest.java` for all five `/entries` operations, asserting each rejection code from T015 and that a foreign entry ID returns **404, not 403**
-- [ ] T035 [P] [US1] Contract tests in `src/test/java/com/stashup/contract/SummaryContractTest.java` for `GET /summaries/{period}` covering both `YYYY-MM` and `YYYY` forms
+- [X] T033 [P] [US1] Contract tests in `src/test/java/com/stashup/contract/CategoryContractTest.java` for `GET|POST /categories` and `DELETE /categories/{id}`, including 409 when a category is still referenced
+- [X] T034 [P] [US1] Contract tests in `src/test/java/com/stashup/contract/EntryContractTest.java` for all five `/entries` operations, asserting each rejection code from T015 and that a foreign entry ID returns **404, not 403**
+- [X] T035 [P] [US1] Contract tests in `src/test/java/com/stashup/contract/SummaryContractTest.java` for `GET /summaries/{period}` covering both `YYYY-MM` and `YYYY` forms
 - [X] T036 [P] [US1] Unit tests in `src/test/java/com/stashup/unit/EntryValidationTest.java` for amount > 0, future date rejection, direction/type compatibility, category-type match, and currency match
 - [X] T037 [P] [US1] Integration test in `src/test/java/com/stashup/integration/EntryLifecycleIT.java` covering create → list → filter → edit → delete and asserting summaries change correctly at each step, including the spec's edit and delete scenarios
-- [ ] T038 [P] [US1] Integration test in `src/test/java/com/stashup/integration/IdempotencyIT.java` asserting a replayed `Idempotency-Key` creates exactly one entry and a reused key with a different body returns 409
-- [ ] T039 [P] [US1] Repository test in `src/test/java/com/stashup/integration/EntryAuthorizationIT.java` asserting no finder can return another user's entry — the data-layer authorization guarantee from Principle IV
+- [X] T038 [P] [US1] Integration test in `src/test/java/com/stashup/integration/IdempotencyIT.java` asserting a replayed `Idempotency-Key` creates exactly one entry and a reused key with a different body returns 409
+- [X] T039 [P] [US1] Repository test in `src/test/java/com/stashup/integration/EntryAuthorizationIT.java` asserting no finder can return another user's entry — the data-layer authorization guarantee from Principle IV
 
 ### Implementation for User Story 1
 
@@ -165,7 +165,7 @@ component inputs match the documented rules. Then verify the yearly score aggreg
 - [X] T055 [P] [US2] Unit test in `src/test/java/com/stashup/unit/YearlyScoreTest.java` asserting the yearly score sums underlying money-in and stashed rather than averaging monthly scores: months of (1,000 / 500) and (100,000 / 5,000) must yield ≈ 5, not ≈ 27
 - [X] T056 [P] [US2] Unit test in `src/test/java/com/stashup/unit/ScoreBandTest.java` asserting the five equal bands and identical band boundaries for every user
 - [X] T057 [P] [US2] Unit test in `src/test/java/com/stashup/unit/NetStashTest.java` asserting a 10,000 deposit followed by an 8,000 withdrawal in one month counts net 2,000, and that a negative net month contributes zero
-- [ ] T058 [P] [US2] Contract tests in `src/test/java/com/stashup/contract/ScoreContractTest.java` for `GET /scores/{period}` and `GET /scores`, asserting `inputs`, `capped`, `changeFromPreviousPeriod`, and `contributingMonths` are present and correctly typed
+- [X] T058 [P] [US2] Contract tests in `src/test/java/com/stashup/contract/ScoreContractTest.java` for `GET /scores/{period}` and `GET /scores`, asserting `inputs`, `capped`, `changeFromPreviousPeriod`, and `contributingMonths` are present and correctly typed
 - [X] T059 [P] [US2] Integration test in `src/test/java/com/stashup/integration/BackdatedScoreIT.java` asserting an entry backdated into a closed month recalculates that month's score, visible in the write response itself rather than after a delay
 
 ### Implementation for User Story 2
@@ -194,23 +194,23 @@ becomes complete with the score value unchanged.
 
 ### Tests for User Story 3 ⚠️ Write first, observe failing
 
-- [ ] T067 [P] [US3] Unit test in `src/test/java/com/stashup/unit/ReconciliationToleranceTest.java` asserting the flag threshold is `max(10% of money_in, absolute_floor)`, including the small-income case the floor exists to suppress and the exact-boundary case, which must resolve deterministically and not oscillate
-- [ ] T068 [P] [US3] Unit test in `src/test/java/com/stashup/unit/AcknowledgmentScopeTest.java` asserting an acknowledgment holds while `gap ≤ acknowledged_gap + tolerance` and re-flags once the gap grows beyond it (FR-028)
-- [ ] T069 [P] [US3] Contract tests in `src/test/java/com/stashup/contract/ReconciliationContractTest.java` for `GET /periods/{period}/reconciliation` and `PUT|DELETE .../drawdown-acknowledgment`, asserting the prompt carries **exactly two** resolutions
-- [ ] T070 [P] [US3] Test in `src/test/java/com/stashup/unit/ReconciliationCopyTest.java` asserting prompt copy contains none of a denylist of accusatory terms and does not assert or imply dishonesty (FR-025) — the requirement most likely to drift during implementation
-- [ ] T071 [P] [US3] Integration test in `src/test/java/com/stashup/integration/ReconciliationFlowIT.java` covering flag → acknowledge → score unchanged → add expenses → re-flag, and separately flag → record missing income → complete with a recalculated score
-- [ ] T072 [P] [US3] Integration test in `src/test/java/com/stashup/integration/CappedScoreFlagsIT.java` asserting a month where stashed exceeds income is both capped at 100 and flagged `UNRECONCILED`
+- [X] T067 [P] [US3] Unit test in `src/test/java/com/stashup/unit/ReconciliationToleranceTest.java` asserting the flag threshold is `max(10% of money_in, absolute_floor)`, including the small-income case the floor exists to suppress and the exact-boundary case, which must resolve deterministically and not oscillate
+- [X] T068 [P] [US3] Unit test in `src/test/java/com/stashup/unit/AcknowledgmentScopeTest.java` asserting an acknowledgment holds while `gap ≤ acknowledged_gap + tolerance` and re-flags once the gap grows beyond it (FR-028)
+- [X] T069 [P] [US3] Contract tests in `src/test/java/com/stashup/contract/ReconciliationContractTest.java` for `GET /periods/{period}/reconciliation` and `PUT|DELETE .../drawdown-acknowledgment`, asserting the prompt carries **exactly two** resolutions
+- [X] T070 [P] [US3] Test in `src/test/java/com/stashup/unit/ReconciliationCopyTest.java` asserting prompt copy contains none of a denylist of accusatory terms and does not assert or imply dishonesty (FR-025) — the requirement most likely to drift during implementation
+- [X] T071 [P] [US3] Integration test in `src/test/java/com/stashup/integration/ReconciliationFlowIT.java` covering flag → acknowledge → score unchanged → add expenses → re-flag, and separately flag → record missing income → complete with a recalculated score
+- [X] T072 [P] [US3] Integration test in `src/test/java/com/stashup/integration/CappedScoreFlagsIT.java` asserting a month where stashed exceeds income is both capped at 100 and flagged `UNRECONCILED`
 - [ ] T073 [P] [US3] Integration test in `src/test/java/com/stashup/integration/LongTermDrawdownIT.java` covering a user with months of no income spending from reserves, asserting acknowledgment is available per period and never reduces the score
 
 ### Implementation for User Story 3
 
-- [ ] T074 [US3] Create `src/main/resources/db/migration/V4__drawdown_acknowledgment.sql` creating `drawdown_acknowledgment` with `UNIQUE (user_id, period_start)` and cascade from `app_user`
-- [ ] T075 [P] [US3] Add `reconciliation.tolerance-percent` (default 10) and `reconciliation.absolute-floor-minor` (default 10000) to `ApplicationProperties` (T010) and `application.yml`, both externally tunable without a code change
-- [ ] T076 [P] [US3] Create `src/main/java/com/stashup/period/DrawdownAcknowledgment.java` and `DrawdownAcknowledgmentRepository.java`
-- [ ] T077 [US3] Create `src/main/java/com/stashup/period/ReconciliationService.java` computing the tolerance, deciding reconciled state, and deleting a stale acknowledgment once the gap closes so it cannot silently absorb a future gap
-- [ ] T078 [US3] Extend `src/main/java/com/stashup/period/PeriodSummaryRecomputeService.java` (T047) to set `completeness = UNRECONCILED` when the gap exceeds tolerance and is unacknowledged, without altering `score` (FR-029)
-- [ ] T079 [US3] Create `src/main/java/com/stashup/period/ReconciliationController.java` implementing the three reconciliation operations, with prompt copy reviewed against T070
-- [ ] T080 [US3] Add `completeness` to the score payload in `src/main/java/com/stashup/score/ScoreResponse.java` and `src/main/java/com/stashup/score/ScoreController.java` so the owner sees the state alongside the number
+- [X] T074 [US3] Create `src/main/resources/db/migration/V4__drawdown_acknowledgment.sql` creating `drawdown_acknowledgment` with `UNIQUE (user_id, period_start)` and cascade from `app_user`
+- [X] T075 [P] [US3] Add `reconciliation.tolerance-percent` (default 10) and `reconciliation.absolute-floor-minor` (default 10000) to `ApplicationProperties` (T010) and `application.yml`, both externally tunable without a code change
+- [X] T076 [P] [US3] Create `src/main/java/com/stashup/period/DrawdownAcknowledgment.java` and `DrawdownAcknowledgmentRepository.java`
+- [X] T077 [US3] Create `src/main/java/com/stashup/period/ReconciliationService.java` computing the tolerance, deciding reconciled state, and deleting a stale acknowledgment once the gap closes so it cannot silently absorb a future gap
+- [X] T078 [US3] Extend `src/main/java/com/stashup/period/PeriodSummaryRecomputeService.java` (T047) to set `completeness = UNRECONCILED` when the gap exceeds tolerance and is unacknowledged, without altering `score` (FR-029)
+- [X] T079 [US3] Create `src/main/java/com/stashup/period/ReconciliationController.java` implementing the three reconciliation operations, with prompt copy reviewed against T070
+- [X] T080 [US3] Add `completeness` to the score payload in `src/main/java/com/stashup/score/ScoreResponse.java` and `src/main/java/com/stashup/score/ScoreController.java` so the owner sees the state alongside the number
 
 **Checkpoint**: Reconciliation works end to end. All T067–T073 green. US1 and US2 still green.
 
@@ -227,31 +227,31 @@ other's score at all, and that no amount is ever retrievable.
 
 ### Tests for User Story 4 ⚠️ Write first, observe failing
 
-- [ ] T081 [P] [US4] Contract tests in `src/test/java/com/stashup/contract/FriendRequestContractTest.java` for `/friend-requests` operations, asserting `SELF_REQUEST` and `ALREADY_FRIENDS` rejections and that a request to a blocker returns **201**, so blocks are not detectable by probing
-- [ ] T082 [P] [US4] Contract tests in `src/test/java/com/stashup/contract/ComparisonContractTest.java` for `GET /comparison/{period}`, asserting `ranked`, `unranked`, and `streakLookbackMonths = 24` are present
-- [ ] T083 [P] [US4] **Privacy test** in `src/test/java/com/stashup/integration/ScoreVisibilityIT.java` asserting a non-friend, a pending requester, a blocked user, and a removed friend each receive no score and no band through search, comparison, or any other route (FR-036)
-- [ ] T084 [P] [US4] **Privacy test** in `src/test/java/com/stashup/integration/AmountLeakageIT.java` sweeping every friend-visible response and asserting no amount, income, category, or reconciliation gap appears for any user other than the caller (FR-037) — the highest-consequence test in the suite
-- [ ] T085 [P] [US4] Integration test in `src/test/java/com/stashup/integration/FriendshipLifecycleIT.java` covering request → accept → compare → remove, and request → decline where the requester cannot distinguish declined from unanswered
-- [ ] T086 [P] [US4] Integration test in `src/test/java/com/stashup/integration/SimultaneousRequestIT.java` asserting two users requesting each other concurrently produce exactly one accepted friendship, not a duplicate or an error
-- [ ] T087 [P] [US4] Integration test in `src/test/java/com/stashup/integration/BlockingIT.java` asserting a block hides both users from each other in search and comparison and prevents new requests
-- [ ] T088 [P] [US4] Integration test in `src/test/java/com/stashup/integration/ComparisonRankingIT.java` asserting only `COMPLETE` periods are ranked, that unreconciled and no-data friends appear in `unranked` with a reason rather than as zero or last place, and that all-unranked renders meaningfully
-- [ ] T089 [P] [US4] Unit test in `src/test/java/com/stashup/unit/StreakTest.java` asserting a streak counts consecutive complete months, resets on an unreconciled or empty month, and is capped at 24 with the cap declared in the response
-- [ ] T090 [P] [US4] Unit test in `src/test/java/com/stashup/unit/RankingTieTest.java` asserting two users at 30.4% and 30.6% both display 30 but rank deterministically by basis points
+- [X] T081 [P] [US4] Contract tests in `src/test/java/com/stashup/contract/FriendRequestContractTest.java` for `/friend-requests` operations, asserting `SELF_REQUEST` and `ALREADY_FRIENDS` rejections and that a request to a blocker returns **201**, so blocks are not detectable by probing
+- [X] T082 [P] [US4] Contract tests in `src/test/java/com/stashup/contract/ComparisonContractTest.java` for `GET /comparison/{period}`, asserting `ranked`, `unranked`, and `streakLookbackMonths = 24` are present
+- [X] T083 [P] [US4] **Privacy test** in `src/test/java/com/stashup/integration/ScoreVisibilityIT.java` asserting a non-friend, a pending requester, a blocked user, and a removed friend each receive no score and no band through search, comparison, or any other route (FR-036)
+- [X] T084 [P] [US4] **Privacy test** in `src/test/java/com/stashup/integration/AmountLeakageIT.java` sweeping every friend-visible response and asserting no amount, income, category, or reconciliation gap appears for any user other than the caller (FR-037) — the highest-consequence test in the suite
+- [X] T085 [P] [US4] Integration test in `src/test/java/com/stashup/integration/FriendshipLifecycleIT.java` covering request → accept → compare → remove, and request → decline where the requester cannot distinguish declined from unanswered
+- [X] T086 [P] [US4] Integration test in `src/test/java/com/stashup/integration/SimultaneousRequestIT.java` asserting two users requesting each other concurrently produce exactly one accepted friendship, not a duplicate or an error
+- [X] T087 [P] [US4] Integration test in `src/test/java/com/stashup/integration/BlockingIT.java` asserting a block hides both users from each other in search and comparison and prevents new requests
+- [X] T088 [P] [US4] Integration test in `src/test/java/com/stashup/integration/ComparisonRankingIT.java` asserting only `COMPLETE` periods are ranked, that unreconciled and no-data friends appear in `unranked` with a reason rather than as zero or last place, and that all-unranked renders meaningfully
+- [X] T089 [P] [US4] Unit test in `src/test/java/com/stashup/unit/StreakTest.java` asserting a streak counts consecutive complete months, resets on an unreconciled or empty month, and is capped at 24 with the cap declared in the response
+- [X] T090 [P] [US4] Unit test in `src/test/java/com/stashup/unit/RankingTieTest.java` asserting two users at 30.4% and 30.6% both display 30 but rank deterministically by basis points
 
 ### Implementation for User Story 4
 
-- [ ] T091 [US4] Create `src/main/resources/db/migration/V5__friendship.sql` creating `friendship` with canonically ordered `(user_a_id, user_b_id)`, `UNIQUE` on that pair, and the two status indexes from data-model.md
-- [ ] T092 [P] [US4] Create `src/main/java/com/stashup/friendship/Friendship.java` and `FriendshipRepository.java`, with a canonical-ordering helper so no caller can insert an unordered pair
-- [ ] T093 [US4] Create `src/main/java/com/stashup/friendship/FriendshipService.java` implementing the state machine from data-model.md, interpreting a unique-constraint violation on a mutual request as an acceptance rather than an error
-- [ ] T094 [US4] Create `src/main/java/com/stashup/friendship/FriendVisibilityService.java` as the **single** gate through which another user's score may be read, requiring an `ACCEPTED` row — every cross-user read path must call it
-- [ ] T095 [US4] Create `src/main/java/com/stashup/friendship/FriendshipController.java` implementing friend requests, accept, decline, list, and remove
-- [ ] T096 [US4] Create `src/main/java/com/stashup/friendship/BlockController.java` implementing `POST /blocks` and `DELETE /blocks/{userId}`, where unblocking restores no friendship
-- [ ] T097 [US4] Add `GET /users` search to `src/main/java/com/stashup/user/UserController.java` (T030) returning identity only, excluding blockers, and never including a score or band
-- [ ] T098 [P] [US4] Create `src/main/java/com/stashup/score/StreakCalculator.java` computing consecutive complete months from `period_summary` with a bounded 24-month lookback
-- [ ] T099 [US4] Create `src/main/java/com/stashup/friendship/ComparisonService.java` fetching all participants' summaries for the period in a **single** indexed query, ranking by `proportion_bp`, and splitting non-rankable participants into `unranked` with a reason
-- [ ] T100 [US4] Create `src/main/java/com/stashup/friendship/ComparisonController.java` returning `ComparisonEntry` as the closed field set defined in contracts/README.md — adding a field here is the most likely way this product leaks financial data
-- [ ] T101 [US4] Extend account deletion in `src/main/java/com/stashup/user/UserService.java` (T030) to remove all `friendship` rows referencing the deleted user so they vanish from every other user's friend list and comparison view (FR-003)
-- [ ] T102 [US4] Add `streakLookbackMonths: 24` to the comparison response DTO in `src/main/java/com/stashup/friendship/ComparisonResponse.java` so the cap is declared rather than silently truncating
+- [X] T091 [US4] Create `src/main/resources/db/migration/V5__friendship.sql` creating `friendship` with canonically ordered `(user_a_id, user_b_id)`, `UNIQUE` on that pair, and the two status indexes from data-model.md
+- [X] T092 [P] [US4] Create `src/main/java/com/stashup/friendship/Friendship.java` and `FriendshipRepository.java`, with a canonical-ordering helper so no caller can insert an unordered pair
+- [X] T093 [US4] Create `src/main/java/com/stashup/friendship/FriendshipService.java` implementing the state machine from data-model.md, interpreting a unique-constraint violation on a mutual request as an acceptance rather than an error
+- [X] T094 [US4] Create `src/main/java/com/stashup/friendship/FriendVisibilityService.java` as the **single** gate through which another user's score may be read, requiring an `ACCEPTED` row — every cross-user read path must call it
+- [X] T095 [US4] Create `src/main/java/com/stashup/friendship/FriendshipController.java` implementing friend requests, accept, decline, list, and remove
+- [X] T096 [US4] Create `src/main/java/com/stashup/friendship/BlockController.java` implementing `POST /blocks` and `DELETE /blocks/{userId}`, where unblocking restores no friendship
+- [X] T097 [US4] Add `GET /users` search to `src/main/java/com/stashup/user/UserController.java` (T030) returning identity only, excluding blockers, and never including a score or band
+- [X] T098 [P] [US4] Create `src/main/java/com/stashup/score/StreakCalculator.java` computing consecutive complete months from `period_summary` with a bounded 24-month lookback
+- [X] T099 [US4] Create `src/main/java/com/stashup/friendship/ComparisonService.java` fetching all participants' summaries for the period in a **single** indexed query, ranking by `proportion_bp`, and splitting non-rankable participants into `unranked` with a reason
+- [X] T100 [US4] Create `src/main/java/com/stashup/friendship/ComparisonController.java` returning `ComparisonEntry` as the closed field set defined in contracts/README.md — adding a field here is the most likely way this product leaks financial data
+- [X] T101 [US4] Extend account deletion in `src/main/java/com/stashup/user/UserService.java` (T030) to remove all `friendship` rows referencing the deleted user so they vanish from every other user's friend list and comparison view (FR-003)
+- [X] T102 [US4] Add `streakLookbackMonths: 24` to the comparison response DTO in `src/main/java/com/stashup/friendship/ComparisonResponse.java` so the cap is declared rather than silently truncating
 
 **Checkpoint**: All four user stories independently functional. Privacy tests T083 and T084 green.
 
@@ -262,13 +262,13 @@ other's score at all, and that no amount is ever retrievable.
 - [ ] T103 Create `src/test/java/com/stashup/performance/LatencyRegressionTest.java` seeding 3 years of entries and 50 friends, asserting reads p95 < 200 ms / p99 < 500 ms and writes p95 < 500 ms, with a 20% regression against the recorded baseline failing the build
 - [ ] T104 [P] Add a query-count assertion in `src/test/java/com/stashup/performance/ComparisonQueryCountTest.java` proving the comparison view issues a **single** query over `period_summary` rather than fanning out per friend, so the materialisation design cannot be silently bypassed
 - [X] T105 [P] Create `src/main/java/com/stashup/common/maintenance/PurgeScheduler.java` deleting expired refresh tokens and idempotency records older than 24 hours
-- [ ] T106 [P] Create `src/test/java/com/stashup/integration/AccountDeletionCascadeIT.java` asserting deletion removes entries, categories, summaries, acknowledgments, tokens, idempotency records, and friendships, leaving no orphan rows
+- [X] T106 [P] Create `src/test/java/com/stashup/integration/AccountDeletionCascadeIT.java` asserting deletion removes entries, categories, summaries, acknowledgments, tokens, idempotency records, and friendships, leaving no orphan rows
 - [ ] T107 [P] Create `src/test/java/com/stashup/integration/LogRedactionIT.java` asserting no monetary amount or PII reaches the log output on any code path, including error paths
 - [ ] T108 [P] Add `Dockerfile` and `compose.yaml` for local MySQL 8.4 plus the application, matching the versions in quickstart.md
-- [ ] T109 [P] Create `README.md` at repository root covering setup, required environment variables, the build gates, and the Boot 4 starter-rename warning
+- [X] T109 [P] Create `README.md` at repository root covering setup, required environment variables, the build gates, and the Boot 4 starter-rename warning
 - [ ] T110 Run every scenario in [quickstart.md](./quickstart.md) against a running instance and record the results, particularly scenario 2 (proportion fairness) and scenario 6 (privacy)
-- [ ] T111 Verify the JaCoCo gates configured in `pom.xml` pass at 80% overall and 90% for `security`, `score`, `period`, and `friendship`; add unit tests under `src/test/java/com/stashup/unit/` where short rather than lowering a threshold
-- [ ] T112 Run `./mvnw verify` clean with all gates active — Spotless, Checkstyle, Error Prone, NullAway, JaCoCo, OWASP, contract diff, and the latency suite
+- [X] T111 Verify the JaCoCo gates configured in `pom.xml` pass at 80% overall and 90% for `security`, `score`, `period`, and `friendship`; add unit tests under `src/test/java/com/stashup/unit/` where short rather than lowering a threshold
+- [X] T112 Run `./mvnw verify` clean with all gates active — Spotless, Checkstyle, Error Prone, NullAway, JaCoCo, OWASP, contract diff, and the latency suite
 
 ---
 

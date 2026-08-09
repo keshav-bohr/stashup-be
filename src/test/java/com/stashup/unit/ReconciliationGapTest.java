@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.stashup.period.PeriodTotals;
+import com.stashup.domain.PeriodTotals;
 
 /**
  * The reconciliation gap: how much a period's outflow exceeds its recorded money in.

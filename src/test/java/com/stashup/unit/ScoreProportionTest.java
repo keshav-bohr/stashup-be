@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.stashup.score.ScoreCalculator;
+import com.stashup.service.ScoreCalculator;
 
 /**
  * The decisive property of the whole product: the score measures a <em>proportion</em>, not an

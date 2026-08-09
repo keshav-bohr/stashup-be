@@ -149,6 +149,15 @@
       <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!--
+      Boot 4 ships a -test starter per regular starter. MockMvc auto-configuration lives here,
+      and its annotation moved to org.springframework.boot.webmvc.test.autoconfigure.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-testcontainers</artifactId>
@@ -287,14 +296,27 @@
                     </limit>
                   </limits>
                 </rule>
-                <!-- Constitution: 90% for auth, scoring, period, and friendship logic. -->
+                <!--
+                  Constitution: 90% for auth, scoring, period, and friendship logic.
+
+                  In a layered package structure those concerns are spread across service/,
+                  domain/, and controller/, so the gate names the classes rather than a package.
+                  A new sensitive class must be added here deliberately - which is the point.
+                -->
                 <rule>
-                  <element>PACKAGE</element>
+                  <element>CLASS</element>
                   <includes>
-                    <include>com.stashup.security*</include>
-                    <include>com.stashup.score*</include>
-                    <include>com.stashup.period*</include>
-                    <include>com.stashup.friendship*</include>
+                    <include>com.stashup.service.AuthService</include>
+                    <include>com.stashup.service.JwtService</include>
+                    <include>com.stashup.service.AccountLockoutService</include>
+                    <include>com.stashup.service.ScoreService</include>
+                    <include>com.stashup.service.ScoreCalculator</include>
+                    <include>com.stashup.service.StreakCalculator</include>
+                    <include>com.stashup.service.PeriodSummaryRecomputeService</include>
+                    <include>com.stashup.service.ReconciliationService</include>
+                    <include>com.stashup.service.FriendshipService</include>
+                    <include>com.stashup.service.FriendVisibilityService</include>
+                    <include>com.stashup.service.ComparisonService</include>
                   </includes>
                   <limits>
                     <limit>

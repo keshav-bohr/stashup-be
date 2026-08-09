@@ -8,8 +8,8 @@ import java.util.Currency;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.stashup.common.money.CurrencyMismatchException;
-import com.stashup.common.money.Money;
+import com.stashup.domain.CurrencyMismatchException;
+import com.stashup.domain.Money;
 
 class MoneyTest {
 

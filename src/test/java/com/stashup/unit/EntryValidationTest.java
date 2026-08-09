@@ -12,12 +12,12 @@ import java.util.Currency;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.stashup.common.error.ApiException;
-import com.stashup.common.error.ErrorCode;
-import com.stashup.common.money.Money;
-import com.stashup.entry.Direction;
-import com.stashup.entry.EntryType;
-import com.stashup.entry.EntryValidator;
+import com.stashup.domain.Direction;
+import com.stashup.domain.EntryType;
+import com.stashup.domain.Money;
+import com.stashup.exception.ApiException;
+import com.stashup.exception.ErrorCode;
+import com.stashup.service.EntryValidator;
 
 class EntryValidationTest {
 

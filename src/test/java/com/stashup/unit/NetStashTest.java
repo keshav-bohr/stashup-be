@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.stashup.entry.Direction;
-import com.stashup.entry.EntryType;
-import com.stashup.period.PeriodTotals;
+import com.stashup.domain.Direction;
+import com.stashup.domain.EntryType;
+import com.stashup.domain.PeriodTotals;
 
 /**
  * Netting is what stops the simplest way of gaming the score: moving the same money into savings

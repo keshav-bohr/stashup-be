@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.stashup.period.ScoreBand;
+import com.stashup.domain.ScoreBand;
 
 /** Bands must be identical for every user, or the comparison view means nothing (FR-019). */
 class ScoreBandTest {

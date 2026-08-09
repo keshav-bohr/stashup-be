@@ -14,24 +14,24 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.stashup.category.Category;
-import com.stashup.category.CategoryRepository;
-import com.stashup.common.error.ApiException;
-import com.stashup.entry.Direction;
-import com.stashup.entry.EntryDtos.CreateEntryRequest;
-import com.stashup.entry.EntryDtos.EntryResponse;
-import com.stashup.entry.EntryDtos.MoneyDto;
-import com.stashup.entry.EntryDtos.UpdateEntryRequest;
-import com.stashup.entry.EntryService;
-import com.stashup.entry.EntryType;
-import com.stashup.period.Completeness;
-import com.stashup.period.PeriodRef;
-import com.stashup.period.PeriodSummaryService;
-import com.stashup.score.ScoreDtos.ScoreResponse;
-import com.stashup.score.ScoreService;
+import com.stashup.domain.Completeness;
+import com.stashup.domain.Direction;
+import com.stashup.domain.EntryType;
+import com.stashup.domain.PeriodRef;
+import com.stashup.dto.EntryDtos.CreateEntryRequest;
+import com.stashup.dto.EntryDtos.EntryResponse;
+import com.stashup.dto.EntryDtos.MoneyDto;
+import com.stashup.dto.EntryDtos.UpdateEntryRequest;
+import com.stashup.dto.ScoreDtos.ScoreResponse;
+import com.stashup.entity.AppUser;
+import com.stashup.entity.Category;
+import com.stashup.exception.ApiException;
+import com.stashup.repository.AppUserRepository;
+import com.stashup.repository.CategoryRepository;
+import com.stashup.service.EntryService;
+import com.stashup.service.PeriodSummaryService;
+import com.stashup.service.ScoreService;
 import com.stashup.support.MySqlTestBase;
-import com.stashup.user.AppUser;
-import com.stashup.user.AppUserRepository;
 
 /**
  * End-to-end over real MySQL: migrations, JPA mappings, netting, in-transaction recomputation,

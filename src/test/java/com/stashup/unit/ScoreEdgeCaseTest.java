@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.stashup.period.Completeness;
-import com.stashup.period.PeriodTotals;
-import com.stashup.score.ScoreCalculator;
+import com.stashup.domain.Completeness;
+import com.stashup.domain.PeriodTotals;
+import com.stashup.service.ScoreCalculator;
 
 /**
  * The three "zero-ish" states must stay distinguishable. Collapsing any two of them misreports a

@@ -1,12 +1,27 @@
-# Local development profile. Values here are for a throwaway local database only.
-# Real secrets always come from the environment, never from a committed file.
+# Local development profile.
+#
+# Everything here is a DEV-ONLY default for a throwaway database, and every value can still be
+# overridden by the environment. Real deployments run without this profile, where the base
+# application.yml has no defaults at all and the service fails fast if a value is missing.
+#
+# Quick start:
+#   mysql -uroot -e "CREATE DATABASE IF NOT EXISTS stashup"
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 spring:
   datasource:
     url: ${STASHUP_DB_URL:jdbc:mysql://localhost:3306/stashup}
     username: ${STASHUP_DB_USERNAME:root}
-    password: ${STASHUP_DB_PASSWORD:local}
+    # Empty by default: a stock local MySQL has no root password. Set STASHUP_DB_PASSWORD if
+    # yours does.
+    password: ${STASHUP_DB_PASSWORD:}
   jpa:
     show-sql: false
+
+stashup:
+  security:
+    # DEV ONLY. Not a secret, and must never be used anywhere real — this file is committed.
+    # Production takes STASHUP_JWT_SECRET from the environment, and startup fails without it.
+    jwt-secret: ${STASHUP_JWT_SECRET:local-development-only-jwt-secret-not-for-real-use}
 
 management:
   endpoint:

@@ -119,20 +119,20 @@ specs/001-stash-score-tracker/
 pom.xml
 src/main/java/com/stashup/
 ├── StashUpApplication.java
-├── common/
-│   ├── money/            # Money value type, currency handling, minor-unit arithmetic
-│   ├── error/            # ProblemDetail envelope, error codes, global exception handler
-│   ├── correlation/      # Correlation ID filter, MDC propagation, log redaction
-│   ├── idempotency/      # Idempotency-Key interceptor and record store
-│   └── page/             # Keyset pagination primitives, max page size enforcement
-├── security/             # Spring Security config, JWT issue/verify, refresh tokens,
-│                         # per-account lockout, current-user resolution
-├── user/                 # Registration, profile, search, account deletion
-├── category/             # System and user-defined categories
-├── entry/                # Financial entries: create, list, filter, edit, delete
-├── period/               # Period summaries, reconciliation gap, drawdown acknowledgment
-├── score/                # Score computation, bands, history, streaks
-└── friendship/           # Requests, acceptance, blocks, comparison view
+├── config/               # ApplicationProperties, TimeConfig, SecurityConfig
+├── controller/           # 9 @RestControllers — auth, user, category, entry, summary,
+│                         # score, reconciliation, friendship, comparison
+├── service/              # Business logic — 20 classes including the score and streak
+│                         # calculators, entry validator, and reconciliation prompts
+├── repository/           # 8 Spring Data interfaces, every finder scoped by owning user
+├── entity/               # 8 JPA entities
+├── dto/                  # Request/response records, one Dtos holder per resource
+├── domain/               # Framework-free value objects and enums: Money, EntryType,
+│                         # Direction, Completeness, ScoreBand, PeriodRef, PeriodTotals
+├── exception/            # ErrorCode, ApiException, GlobalExceptionHandler
+├── security/             # @CurrentUserId and its argument resolver
+├── web/                  # Correlation filter, rate limiting, keyset pagination
+└── util/                 # UuidV7
 
 src/main/resources/
 ├── application.yml
@@ -140,19 +140,30 @@ src/main/resources/
 └── db/migration/         # Flyway forward-only migrations
 
 src/test/java/com/stashup/
-├── contract/             # Per-endpoint request/response schema and status tests
-├── integration/          # Testcontainers MySQL, cross-layer flows
+├── contract/             # HTTP-level tests through the real filter chain
+├── integration/          # Real MySQL, cross-layer flows, privacy assertions
 ├── unit/                 # Scoring, reconciliation, money arithmetic, streak logic
-└── performance/          # Seeded latency regression suite
+└── support/              # MySqlTestBase
 ```
 
-**Structure Decision**: A single Maven module, packaged by feature rather than by layer. Each
-feature package owns its controller, service, repository, entity, and DTOs. A multi-module build
-was rejected as unjustified complexity under the constitution's simplicity rule — there is one
-deployable, and module boundaries would be enforcing a separation the package structure already
-expresses. `common/` and `security/` are the only cross-cutting packages; a feature package
-depending on another feature package's internals is a review failure, and the `period` → `score`
-relationship is the one intentional dependency (scores are derived from period summaries).
+**Structure Decision**: A single Maven module, packaged by layer — the conventional Spring
+arrangement, chosen for familiarity so any Spring developer can navigate it without a map. A
+multi-module build was rejected as unjustified complexity under the constitution's simplicity
+rule: there is one deployable, and module boundaries would enforce a separation the packages
+already express.
+
+`domain/` holds framework-free value objects and enums, so the scoring and money rules are
+testable without Spring — `ScoreCalculator` and `Money` have no Spring dependency at all.
+
+The trade-off this layout costs us is worth naming, because it affects how the constitution's
+Principle IV is enforced. Package-by-feature would have let a reviewer answer "does anything
+outside the friendship code read another user's score?" by reading one directory. Layered, that
+question spans `controller/`, `service/`, and `repository/`. Two things compensate:
+`FriendVisibilityService` is the single gate every cross-user score read must pass through, and
+`AmountLeakageIT` asserts the absence of leaks from the outside by sweeping serialised responses.
+The JaCoCo 90% gate likewise moved from a package rule to a named-class rule, so adding a
+sensitive class is now a deliberate edit to `pom.xml` rather than something inherited from a
+package name.
 
 ## Complexity Tracking
 

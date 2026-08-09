@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.stashup.common.error.ApiException;
-import com.stashup.common.error.ErrorCode;
-import com.stashup.period.PeriodRef;
+import com.stashup.domain.PeriodRef;
+import com.stashup.exception.ApiException;
+import com.stashup.exception.ErrorCode;
 
 class PeriodRefTest {
 

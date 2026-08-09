@@ -11,10 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.stashup.common.error.ApiException;
-import com.stashup.common.error.ErrorCode;
-import com.stashup.common.id.UuidV7;
-import com.stashup.common.page.CursorCodec;
+import com.stashup.exception.ApiException;
+import com.stashup.exception.ErrorCode;
+import com.stashup.util.UuidV7;
+import com.stashup.web.CursorCodec;
 
 class CursorCodecTest {
 

@@ -7,7 +7,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.stashup.score.ScoreCalculator;
+import com.stashup.service.ScoreCalculator;
 
 /**
  * A yearly score sums the underlying figures and derives the proportion once. It must never be

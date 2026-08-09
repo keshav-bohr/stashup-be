@@ -12,8 +12,8 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import com.stashup.common.error.ApiException;
-import com.stashup.common.error.ErrorCode;
+import com.stashup.exception.ApiException;
+import com.stashup.exception.ErrorCode;
 
 /** Resolves {@link CurrentUserId} from the JWT subject. */
 @Component
